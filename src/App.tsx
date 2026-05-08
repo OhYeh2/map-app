@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { FolderOpen, Download, Upload, Map as MapIcon, Loader2 } from 'lucide-react';
+import { FolderOpen, ImagePlus, Download, Upload, Map as MapIcon, Loader2 } from 'lucide-react';
 import { Map } from './components/Map';
 import { MediaViewer } from './components/MediaViewer';
-import { openDirectory } from './utils/fileSystem';
+import { openDirectory, openFilePicker, supportsDirectoryPicker } from './utils/fileSystem';
 import { parseMediaFile } from './utils/mediaParser';
 import { exportCorrections, importCorrections } from './utils/corrections';
 import type { MediaItem, Corrections } from './types';
@@ -16,10 +16,12 @@ function App() {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const canPickDirectory = supportsDirectoryPicker();
+
   const handleOpenFolder = async () => {
     setLoading(true);
     try {
-      const files = await openDirectory();
+      const files = canPickDirectory ? await openDirectory() : await openFilePicker();
       if (files.length === 0) {
         setLoading(false);
         return;
@@ -117,8 +119,8 @@ function App() {
           onClick={handleOpenFolder}
           disabled={loading}
         >
-          {loading ? <Loader2 className="animate-spin" size={18} /> : <FolderOpen size={18} />}
-          {loading ? '讀取解析中...' : '選擇資料夾'}
+          {loading ? <Loader2 className="animate-spin" size={18} /> : canPickDirectory ? <FolderOpen size={18} /> : <ImagePlus size={18} />}
+          {loading ? '讀取解析中...' : canPickDirectory ? '選擇資料夾' : '選擇照片/影片'}
         </button>
 
         {loading && progress.total > 0 && (
