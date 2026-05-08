@@ -93,7 +93,7 @@ export const Map: React.FC<MapProps> = ({
               spiderfiedClusterRef.current = cluster;
             }
           }}
-          onClick={(e: any) => {
+          onClick={() => {
              // Do nothing to prevent zoom/black screen issues
           }}
         >
