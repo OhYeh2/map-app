@@ -1,17 +1,20 @@
-import React from 'react';
-import { MapContainer, TileLayer, Marker, LayersControl } from 'react-leaflet';
+import React, { useRef, useMemo, useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, LayersControl, useMapEvents } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import type { MediaItem } from '../types';
 
 interface MapProps {
   items: MediaItem[];
+  markerSize: number;
   onMarkerDragEnd: (id: string, lat: number, lng: number) => void;
   onMarkerClick: (item: MediaItem) => void;
+  onMarkerHover: (item: MediaItem) => void;
+  onMarkerOut: () => void;
 }
 
 // Function to create custom DivIcon for thumbnails
-const createCustomIcon = (item: MediaItem) => {
+const createCustomIcon = (item: MediaItem, size: number) => {
   const isVideo = item.type === 'video';
   return L.divIcon({
     html: `
@@ -20,8 +23,8 @@ const createCustomIcon = (item: MediaItem) => {
       </div>
     `,
     className: '', // Clear default class to use our own styling
-    iconSize: [48, 48],
-    iconAnchor: [24, 24] // Center anchor
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2] // Center anchor
   });
 };
 
@@ -33,7 +36,89 @@ const createClusterCustomIcon = function (cluster: any) {
   });
 };
 
-export const Map: React.FC<MapProps> = ({ items, onMarkerDragEnd, onMarkerClick }) => {
+const MapEventsHandler = ({ spiderfiedClusterRef }: { spiderfiedClusterRef: React.MutableRefObject<any> }) => {
+  const map = useMapEvents({
+    mousemove: (e) => {
+      const cluster = spiderfiedClusterRef.current;
+      if (cluster) {
+        const clusterPoint = map.latLngToContainerPoint(cluster.getLatLng());
+        const mousePoint = map.latLngToContainerPoint(e.latlng);
+        const distance = clusterPoint.distanceTo(mousePoint);
+        
+        // Calculate outer radius based on number of items. 
+        // With distance multiplier 2, they spread out quite a bit.
+        const childCount = cluster.getChildCount();
+        const thresholdRadius = 120 + (childCount * 12);
+
+        if (distance > thresholdRadius) {
+          if (cluster.unspiderfy) {
+            cluster.unspiderfy();
+          }
+          spiderfiedClusterRef.current = null;
+        }
+      }
+    }
+  });
+  return null;
+};
+
+export const Map: React.FC<MapProps> = ({ 
+  items, 
+  markerSize,
+  onMarkerDragEnd, 
+  onMarkerClick,
+  onMarkerHover,
+  onMarkerOut
+}) => {
+  const spiderfiedClusterRef = useRef<any>(null);
+  
+  const callbacksRef = useRef({ onMarkerDragEnd, onMarkerClick, onMarkerHover, onMarkerOut });
+  useEffect(() => {
+    callbacksRef.current = { onMarkerDragEnd, onMarkerClick, onMarkerHover, onMarkerOut };
+  }, [onMarkerDragEnd, onMarkerClick, onMarkerHover, onMarkerOut]);
+
+  const markerGroup = useMemo(() => {
+    return (
+        <MarkerClusterGroup 
+          chunkedLoading 
+          iconCreateFunction={createClusterCustomIcon}
+          maxClusterRadius={60}
+          spiderfyOnMaxZoom={true}
+          zoomToBoundsOnClick={false}
+          spiderfyDistanceMultiplier={2}
+          onMouseOver={(e: any) => {
+            const cluster = e.layer;
+            if (cluster && cluster.spiderfy && spiderfiedClusterRef.current !== cluster) {
+              cluster.spiderfy();
+              spiderfiedClusterRef.current = cluster;
+            }
+          }}
+          onClick={(e: any) => {
+             // Do nothing to prevent zoom/black screen issues
+          }}
+        >
+          {items.map((item) => (
+            <Marker
+              key={item.id}
+              position={[item.lat, item.lng]}
+              icon={createCustomIcon(item, markerSize)}
+              draggable={true}
+              eventHandlers={{
+                dragend: (e) => {
+                  const marker = e.target;
+                  const position = marker.getLatLng();
+                  callbacksRef.current.onMarkerDragEnd(item.id, position.lat, position.lng);
+                },
+                click: () => callbacksRef.current.onMarkerClick(item),
+                mouseover: () => callbacksRef.current.onMarkerHover(item),
+                mouseout: () => callbacksRef.current.onMarkerOut()
+              }}
+            />
+          ))}
+        </MarkerClusterGroup>
+    );
+  }, [items, markerSize]);
+
   // Center map on the first item or default to Taiwan
   const center: [number, number] = items.length > 0 
     ? [items[0].lat, items[0].lng] 
@@ -74,29 +159,9 @@ export const Map: React.FC<MapProps> = ({ items, onMarkerDragEnd, onMarkerClick 
           </LayersControl.BaseLayer>
         </LayersControl>
         
-        <MarkerClusterGroup 
-          chunkedLoading 
-          iconCreateFunction={createClusterCustomIcon}
-          maxClusterRadius={60}
-          spiderfyOnMaxZoom={true}
-        >
-          {items.map((item) => (
-            <Marker
-              key={item.id}
-              position={[item.lat, item.lng]}
-              icon={createCustomIcon(item)}
-              draggable={true}
-              eventHandlers={{
-                dragend: (e) => {
-                  const marker = e.target;
-                  const position = marker.getLatLng();
-                  onMarkerDragEnd(item.id, position.lat, position.lng);
-                },
-                click: () => onMarkerClick(item)
-              }}
-            />
-          ))}
-        </MarkerClusterGroup>
+        <MapEventsHandler spiderfiedClusterRef={spiderfiedClusterRef} />
+        
+        {markerGroup}
       </MapContainer>
     </div>
   );

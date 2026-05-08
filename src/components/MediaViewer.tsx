@@ -8,22 +8,19 @@ interface MediaViewerProps {
 }
 
 export const MediaViewer: React.FC<MediaViewerProps> = ({ item, onClose }) => {
-  if (!item) return null;
-
-  // We need to create an Object URL for the full file if we want to show it.
-  // For HEIC, we might only be able to show the thumbnail unless we convert the full size here.
-  // To keep it simple and performant, we will use the thumbnail for HEIC/Video preview,
-  // but for Video we will use the actual file object URL to play it.
-  
   const [objectUrl, setObjectUrl] = React.useState<string>('');
 
   React.useEffect(() => {
+    if (!item) {
+      setObjectUrl('');
+      return;
+    }
+    
     let url = '';
     if (item.type === 'video' || item.filename.toLowerCase().endsWith('.jpg') || item.filename.toLowerCase().endsWith('.jpeg') || item.filename.toLowerCase().endsWith('.png')) {
       url = URL.createObjectURL(item.file);
       setObjectUrl(url);
     } else {
-      // For HEIC, we just use the thumbnail URL we already generated
       setObjectUrl(item.thumbnailUrl);
     }
 
@@ -31,6 +28,8 @@ export const MediaViewer: React.FC<MediaViewerProps> = ({ item, onClose }) => {
       if (url) URL.revokeObjectURL(url);
     };
   }, [item]);
+
+  if (!item) return null;
 
   return (
     <div className={`lightbox-overlay ${item ? 'active' : ''}`} onClick={onClose}>

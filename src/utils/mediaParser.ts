@@ -62,7 +62,19 @@ export async function parseMediaFile(file: File, id: string): Promise<MediaItem 
         return null;
       }
     } else {
-      thumbnailUrl = URL.createObjectURL(file);
+      // 方案一：嘗試抽取內建 EXIF 微型縮圖 (極快、極省記憶體)
+      try {
+        const exifThumb = await exifr.thumbnailUrl(file);
+        if (exifThumb) {
+          thumbnailUrl = exifThumb;
+        } else {
+          // 方案二：如果沒有內建縮圖，透過 Canvas 產生低解析度縮圖
+          thumbnailUrl = await generateImageThumbnail(file);
+        }
+      } catch (e) {
+        // 錯誤降級處理
+        thumbnailUrl = await generateImageThumbnail(file);
+      }
     }
 
     return {
@@ -148,5 +160,58 @@ function extractVideoGpsFallback(file: File): Promise<{lat: number, lng: number}
     
     // QuickTime usually puts moov box at the start or end
     reader.readAsArrayBuffer(file);
+  });
+}
+
+function generateImageThumbnail(file: File): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(objectUrl);
+        return;
+      }
+      
+      const maxSize = 256;
+      let width = img.width;
+      let height = img.height;
+      
+      if (width > height) {
+        if (width > maxSize) {
+          height *= maxSize / width;
+          width = maxSize;
+        }
+      } else {
+        if (height > maxSize) {
+          width *= maxSize / height;
+          height = maxSize;
+        }
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      canvas.toBlob((blob) => {
+        URL.revokeObjectURL(objectUrl); // 釋放原圖記憶體
+        if (blob) {
+          resolve(URL.createObjectURL(blob));
+        } else {
+          // 失敗降級
+          resolve(URL.createObjectURL(file));
+        }
+      }, 'image/jpeg', 0.6);
+    };
+    
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(URL.createObjectURL(file));
+    };
+    
+    img.src = objectUrl;
   });
 }

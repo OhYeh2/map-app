@@ -1,73 +1,58 @@
-# React + TypeScript + Vite
+# 荒野相簿地圖 (Wilderness Photo Map) 使用說明
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+本專案是一個基於瀏覽器本地端執行的專業相簿地圖工具，專為需要視覺化管理帶有 GPS 座標的媒體檔案（相片與影片）所設計。所有的檔案處理均在您的瀏覽器內完成，無需上傳至伺服器，完全保障您的隱私。
 
-Currently, two official plugins are available:
+## 🚀 核心功能特色
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### 1. 📂 本地端資料夾載入 (Local File Access)
+- **支援多種格式**：自動解析資料夾內的 `.jpg`, `.png`, `.heic` 照片以及 `.mp4`, `.mov` 影片檔案。
+- **GPS 座標擷取**：自動讀取檔案的 EXIF 資料，並將檔案精準定位於地圖上。
+- **極致記憶體優化**：讀取照片時自動抽取內建的 EXIF 微型縮圖 (Micro-thumbnails)，或透過硬體加速 Canvas 即時壓縮。即使一次載入數百張千萬畫素的高畫質照片，也能確保極低的記憶體佔用與極致滑順的拖曳體驗，防止瀏覽器因記憶體耗盡 (OOM) 而崩潰。
 
-## React Compiler
+### 2. 🗺️ 互動式地圖叢集 (Marker Clustering)
+- 當許多照片在同一個地點或非常接近時，地圖會自動將它們整合成一個帶有數字的群組（叢集）。
+- **無縫懸停展開 (Spiderfy on Hover)**：
+  只需將滑鼠游標停留在群組數字上，內部的所有縮圖就會以多層同心圓、放射狀自動展開，且數量越多，排列半徑會自動加大，不會互相重疊。
+- **自動收合 (Auto-Collapse)**：
+  當滑鼠離開展開的圓形區域範圍時，縮圖會自動收合成原來的群組數字，保持畫面簡潔。
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 3. 🖱️ 媒體即時懸停預覽 (Hover Preview)
+- 將滑鼠移動到任何一張獨立的方形縮圖上，螢幕右下角會立刻浮現預覽視窗（約為畫面的 1/5 大小）。
+- 若該檔案為影片，預覽視窗會**自動靜音並循環播放**，無需點擊開啟大圖即可快速瀏覽內容。
 
-## Expanding the ESLint configuration
+### 4. 🎛️ 側邊欄與縮圖控制 (Sidebar Controls)
+- 畫面左側配備可伸縮、收合的側邊欄，不會阻擋地圖主畫面。
+- **樹狀結構檔案管理**：以資料夾樹狀結構顯示所有載入的相片，並支援資料夾階層展開。
+- **動態縮圖大小調整**：側邊欄內建「縮圖大小拉桿」，可隨時拖曳以放大或縮小地圖上所有的照片方格，數值範圍從 24px 到 128px。
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 5. 📍 手動座標校正與匯出/匯入 (Manual GPS Corrections)
+- 若發現照片的 GPS 座標有誤差，您可以直接在地圖上**按住並拖曳**該照片的方格，移至正確的位置。
+- 所有的移動校正紀錄會保存在系統記憶體中。
+- 您可以點擊側邊欄的 **「匯出校正檔 (Export Corrections)」**，將修改過的座標儲存成 `.json` 檔案到電腦中。
+- 下次使用時，可以點擊 **「匯入校正檔 (Import Corrections)」**，輕鬆載入之前修改過的正確位置。
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 🛠️ 開發與執行說明
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### 系統需求
+- 已安裝 [Node.js](https://nodejs.org/)
+- 現代化的瀏覽器（如 Google Chrome, Microsoft Edge）以支援 File System Access API。
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 安裝與啟動
+1. 在專案目錄 (`map-app`) 開啟終端機。
+2. 若尚未安裝相依套件，請執行：
+   ```bash
+   npm install
+   ```
+3. 啟動本地開發伺服器：
+   ```bash
+   npm run dev
+   ```
+4. 開啟瀏覽器並前往 `http://localhost:5173/map-app/`。
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### 專案技術棧
+- **核心框架**：React + TypeScript + Vite
+- **地圖套件**：Leaflet + react-leaflet + react-leaflet-cluster
+- **EXIF 解析**：exifr (處理 JPG, PNG 等), heic2any (處理 iOS HEIC 圖片)
+- **圖示庫**：lucide-react

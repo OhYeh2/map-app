@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { FolderOpen, ImagePlus, Download, Upload, Map as MapIcon, Loader2 } from 'lucide-react';
 import { Map } from './components/Map';
+import { Sidebar } from './components/Sidebar';
 import { MediaViewer } from './components/MediaViewer';
+import { HoverPreview } from './components/HoverPreview';
 import { openDirectory, openFilePicker, supportsDirectoryPicker } from './utils/fileSystem';
 import { parseMediaFile } from './utils/mediaParser';
 import { exportCorrections, importCorrections } from './utils/corrections';
@@ -13,6 +14,8 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [selectedItem, setSelectedItem] = useState<MediaItem | null>(null);
+  const [hoveredItem, setHoveredItem] = useState<MediaItem | null>(null);
+  const [markerSize, setMarkerSize] = useState(48);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -108,77 +111,49 @@ function App() {
   };
 
   return (
-    <>
-      {/* Floating Control Panel */}
-      <div className="control-panel">
-        <h1><MapIcon className="text-primary" /> 荒野相簿地圖</h1>
-        <p>載入包含 GPS 照片與影片的資料夾</p>
-        
-        <button 
-          className="btn btn-primary" 
-          onClick={handleOpenFolder}
-          disabled={loading}
-        >
-          {loading ? <Loader2 className="animate-spin" size={18} /> : canPickDirectory ? <FolderOpen size={18} /> : <ImagePlus size={18} />}
-          {loading ? '讀取解析中...' : canPickDirectory ? '選擇資料夾' : '選擇照片/影片'}
-        </button>
+    <div className="app-layout">
+      {/* Sidebar */}
+      <Sidebar
+        loading={loading}
+        progress={progress}
+        canPickDirectory={canPickDirectory}
+        correctionsCount={Object.keys(corrections).length}
+        itemsCount={items.length}
+        markerSize={markerSize}
+        onMarkerSizeChange={setMarkerSize}
+        onOpenFolder={handleOpenFolder}
+        onExportCorrections={handleExportCorrections}
+        onImportClick={() => fileInputRef.current?.click()}
+      />
 
-        {loading && progress.total > 0 && (
-          <div>
-            <div className="loading-bar">
-              <div 
-                className="loading-fill" 
-                style={{ width: `${(progress.current / progress.total) * 100}%` }}
-              ></div>
-            </div>
-            <div className="status-text">
-              {progress.current} / {progress.total}
-            </div>
-          </div>
-        )}
-
-        <div className="flex gap-2 mt-2" style={{ display: 'flex', gap: '8px' }}>
-          <button 
-            className="btn btn-secondary" 
-            style={{ flex: 1 }}
-            onClick={handleExportCorrections}
-            disabled={Object.keys(corrections).length === 0}
-            title="儲存您手動拖曳的位置"
-          >
-            <Download size={16} /> 匯出校正
-          </button>
-          
-          <button 
-            className="btn btn-secondary"
-            style={{ flex: 1 }}
-            onClick={() => fileInputRef.current?.click()}
-            title="載入之前儲存的校正檔"
-          >
-            <Upload size={16} /> 匯入校正
-          </button>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            style={{ display: 'none' }} 
-            accept=".json"
-            onChange={handleImportCorrections}
-          />
-        </div>
-      </div>
+      {/* Hidden file input for import */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        style={{ display: 'none' }} 
+        accept=".json"
+        onChange={handleImportCorrections}
+      />
 
       {/* Map Content */}
-      <Map 
-        items={items} 
-        onMarkerDragEnd={handleMarkerDragEnd} 
-        onMarkerClick={setSelectedItem}
-      />
+      <div className="map-area">
+        <Map 
+          items={items} 
+          markerSize={markerSize}
+          onMarkerDragEnd={handleMarkerDragEnd} 
+          onMarkerClick={setSelectedItem}
+          onMarkerHover={setHoveredItem}
+          onMarkerOut={() => setHoveredItem(null)}
+        />
+        {hoveredItem && <HoverPreview item={hoveredItem} />}
+      </div>
 
       {/* Lightbox / Viewer */}
       <MediaViewer 
         item={selectedItem} 
         onClose={() => setSelectedItem(null)} 
       />
-    </>
+    </div>
   );
 }
 
