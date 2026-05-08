@@ -122,7 +122,7 @@ function generateVideoThumbnail(file: File): Promise<string> {
 function extractVideoGpsFallback(file: File): Promise<{lat: number, lng: number} | null> {
   return new Promise((resolve) => {
     // Only read the first 100KB and last 100KB where metadata usually resides
-    const CHUNK_SIZE = 100 * 1024;
+    const _CHUNK_SIZE = 100 * 1024;
     
     const parseBuffer = (buffer: ArrayBuffer) => {
       const decoder = new TextDecoder('utf-8', { fatal: false });
