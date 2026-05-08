@@ -56,3 +56,18 @@
 - **地圖套件**：Leaflet + react-leaflet + react-leaflet-cluster
 - **EXIF 解析**：exifr (處理 JPG, PNG 等), heic2any (處理 iOS HEIC 圖片)
 - **圖示庫**：lucide-react
+
+---
+
+## 🌐 線上展示與部屬 (GitHub Pages)
+
+本專案已自動部屬至 GitHub Pages，您可以直接透過以下網址在瀏覽器中開啟使用，無須在本地端架設環境：
+
+👉 **[線上版荒野相簿地圖 (Live Demo)](https://OhYeh2.github.io/map-app/)**
+
+### 如何更新線上版本？
+若您在本地端修改了程式碼，只需透過終端機執行以下指令，系統便會自動打包並更新至 GitHub Pages：
+```bash
+npm run deploy
+```
+*(註：發布後約需等待 1~2 分鐘，重新整理網頁後即可看到最新版本。)*
